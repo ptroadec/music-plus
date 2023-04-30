@@ -2,10 +2,10 @@ const superagent = require("superagent");
 
 const SPOTIFY_ENDPOINT_MY_PLAYLISTS =
   "https://api.spotify.com/v1/me/playlists?limit=50";
-const SPOTIFY_ENDPOINT_MY_TOP_50_TRACKS_OF_LAST_MONTH =
-  "https://api.spotify.com/v1/me/top/tracks?time_range=short_term&limit=50";
-const SPOTIFY_ENDPOINT_MY_TOP_50_ARTISTS_OF_LAST_MONTH =
-  "https://api.spotify.com/v1/me/top/artists?time_range=short_term&limit=50";
+const SPOTIFY_ENDPOINT_MY_TOP_TRACKS =
+  "https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50";
+const SPOTIFY_ENDPOINT_MY_TOP_ARTISTS =
+  "https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=50";
 const SPOTIFY_ENDPOINT_MY_FOLLOWED_ARTISTS =
   "https://api.spotify.com/v1/me/following?type=artist&limit=50";
 
@@ -15,28 +15,25 @@ async function main() {
   try {
     const { SPOTIFY_USER_ACCESS_TOKEN } = getEnvironmentVariables();
 
-    const playlists = await getUserFirst50Playlists(SPOTIFY_USER_ACCESS_TOKEN);
-    const lastMonthTopTracks = await getUserTop50TracksOfLastMonth(
-      SPOTIFY_USER_ACCESS_TOKEN
-    );
-    const lastMonthTopArtists = await getUserTop50ArtistsOfLastMonth(
-      SPOTIFY_USER_ACCESS_TOKEN
-    );
-    const followedArtists = await getUserFollowedArtists(
-      SPOTIFY_USER_ACCESS_TOKEN
-    );
+    const [playlists, topTracks, topArtists, followedArtists] =
+      await Promise.all([
+        getUserPlaylists(SPOTIFY_USER_ACCESS_TOKEN),
+        getUserTopTracks(SPOTIFY_USER_ACCESS_TOKEN),
+        getUserTopArtists(SPOTIFY_USER_ACCESS_TOKEN),
+        getUserFollowedArtists(SPOTIFY_USER_ACCESS_TOKEN),
+      ]);
 
     console.log(
       "playlists",
       playlists.items.map((i) => i.name)
     );
     console.log(
-      "top 50 tracks",
-      lastMonthTopTracks.items.map((i) => i.name)
+      "top tracks",
+      topTracks.items.map((i) => i.name)
     );
     console.log(
-      "top 50 artists",
-      lastMonthTopArtists.items.map((i) => i.name)
+      "top artists",
+      topArtists.items.map((i) => i.name)
     );
     console.log(
       "followed artists",
@@ -60,7 +57,7 @@ function getEnvironmentVariables() {
   };
 }
 
-async function getUserFirst50Playlists(accessToken) {
+async function getUserPlaylists(accessToken) {
   const response = await superagent
     .get(SPOTIFY_ENDPOINT_MY_PLAYLISTS)
     .set("Authorization", `Bearer ${accessToken}`);
@@ -72,25 +69,25 @@ async function getUserFirst50Playlists(accessToken) {
   return response.body;
 }
 
-async function getUserTop50TracksOfLastMonth(accessToken) {
+async function getUserTopTracks(accessToken) {
   const response = await superagent
-    .get(SPOTIFY_ENDPOINT_MY_TOP_50_TRACKS_OF_LAST_MONTH)
+    .get(SPOTIFY_ENDPOINT_MY_TOP_TRACKS)
     .set("Authorization", `Bearer ${accessToken}`);
 
   if (response.status !== 200) {
-    throw new Error("Cannot get user top tracks of last month");
+    throw new Error("Cannot get user top tracks");
   }
 
   return response.body;
 }
 
-async function getUserTop50ArtistsOfLastMonth(accessToken) {
+async function getUserTopArtists(accessToken) {
   const response = await superagent
-    .get(SPOTIFY_ENDPOINT_MY_TOP_50_ARTISTS_OF_LAST_MONTH)
+    .get(SPOTIFY_ENDPOINT_MY_TOP_ARTISTS)
     .set("Authorization", `Bearer ${accessToken}`);
 
   if (response.status !== 200) {
-    throw new Error("Cannot get user top artists of last month");
+    throw new Error("Cannot get user top artists");
   }
 
   return response.body;
