@@ -3,6 +3,7 @@ const superagent = require("superagent");
 const SPOTIFY_ENDPOINT_MY_PLAYLISTS =
   "https://api.spotify.com/v1/me/playlists?limit=50";
 const SPOTIFY_ENDPOINT_MY_LIKED_TRACKS = "https://api.spotify.com/v1/me/tracks";
+const SPOTIFY_ENDPOINT_MY_LIKED_ALBUMS = "https://api.spotify.com/v1/me/albums";
 const SPOTIFY_ENDPOINT_MY_TOP_TRACKS =
   "https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50";
 const SPOTIFY_ENDPOINT_MY_TOP_ARTISTS =
@@ -16,14 +17,21 @@ async function main() {
   try {
     const { SPOTIFY_USER_ACCESS_TOKEN } = getEnvironmentVariables();
 
-    const [playlists, likedTracks, topTracks, topArtists, followedArtists] =
-      await Promise.all([
-        getUserPlaylists(SPOTIFY_USER_ACCESS_TOKEN),
-        getUserLikedTracks(SPOTIFY_USER_ACCESS_TOKEN),
-        getUserTopTracks(SPOTIFY_USER_ACCESS_TOKEN),
-        getUserTopArtists(SPOTIFY_USER_ACCESS_TOKEN),
-        getUserFollowedArtists(SPOTIFY_USER_ACCESS_TOKEN),
-      ]);
+    const [
+      playlists,
+      likedTracks,
+      likedAlbums,
+      topTracks,
+      topArtists,
+      followedArtists,
+    ] = await Promise.all([
+      getUserPlaylists(SPOTIFY_USER_ACCESS_TOKEN),
+      getUserLikedTracks(SPOTIFY_USER_ACCESS_TOKEN),
+      getUserLikedAlbums(SPOTIFY_USER_ACCESS_TOKEN),
+      getUserTopTracks(SPOTIFY_USER_ACCESS_TOKEN),
+      getUserTopArtists(SPOTIFY_USER_ACCESS_TOKEN),
+      getUserFollowedArtists(SPOTIFY_USER_ACCESS_TOKEN),
+    ]);
 
     console.log("PLAYLISTS");
     for (const [index, playlist] of playlists.entries()) {
@@ -37,6 +45,16 @@ async function main() {
         `${index + 1}. ${track.track.name} - ${track.track.artists
           .map((a) => a.name)
           .join(", ")} | ${track.added_at}`
+      );
+    }
+    console.log();
+
+    console.log("LAST LIKED ALBUMS");
+    for (const [index, album] of likedAlbums.entries()) {
+      console.log(
+        `${index + 1}. ${album.album.name} - ${album.album.artists
+          .map((a) => a.name)
+          .join(", ")} | ${album.added_at}`
       );
     }
     console.log();
@@ -111,6 +129,46 @@ async function getUserPlaylists(accessToken) {
   return items;
 }
 
+async function getUserLikedTracks(accessToken) {
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_LIKED_TRACKS;
+
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    if (response.status !== 200) {
+      throw new Error("Cannot get user liked tracks");
+    }
+
+    items = [...items, ...response.body.items];
+    next = response.body.next;
+  } while (next);
+
+  return items;
+}
+
+async function getUserLikedAlbums(accessToken) {
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_LIKED_ALBUMS;
+
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    if (response.status !== 200) {
+      throw new Error("Cannot get user liked albums");
+    }
+
+    items = [...items, ...response.body.items];
+    next = response.body.next;
+  } while (next);
+
+  return items;
+}
+
 async function getUserTopTracks(accessToken) {
   let items = [];
   let next = SPOTIFY_ENDPOINT_MY_TOP_TRACKS;
@@ -142,26 +200,6 @@ async function getUserTopArtists(accessToken) {
 
     if (response.status !== 200) {
       throw new Error("Cannot get user top artists");
-    }
-
-    items = [...items, ...response.body.items];
-    next = response.body.next;
-  } while (next);
-
-  return items;
-}
-
-async function getUserLikedTracks(accessToken) {
-  let items = [];
-  let next = SPOTIFY_ENDPOINT_MY_LIKED_TRACKS;
-
-  do {
-    const response = await superagent
-      .get(next)
-      .set("Authorization", `Bearer ${accessToken}`);
-
-    if (response.status !== 200) {
-      throw new Error("Cannot get user liked tracks");
     }
 
     items = [...items, ...response.body.items];
