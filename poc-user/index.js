@@ -23,22 +23,28 @@ async function main() {
         getUserFollowedArtists(SPOTIFY_USER_ACCESS_TOKEN),
       ]);
 
-    console.log(
-      "playlists",
-      playlists.items.map((i) => i.name)
-    );
-    console.log(
-      "top tracks",
-      topTracks.items.map((i) => i.name)
-    );
-    console.log(
-      "top artists",
-      topArtists.items.map((i) => i.name)
-    );
-    console.log(
-      "followed artists",
-      followedArtists.artists.items.map((i) => i.name)
-    );
+    console.log("PLAYLISTS");
+    for (const [index, playlist] of playlists.entries()) {
+      console.log(`${index + 1} - ${playlist.name}`);
+    }
+    console.log();
+
+    console.log("TOP TRACKS");
+    for (const [index, track] of topTracks.entries()) {
+      console.log(`${index + 1} - ${track.name}`);
+    }
+    console.log();
+
+    console.log("TOP ARTISTS");
+    for (const [index, artist] of topArtists.entries()) {
+      console.log(`${index + 1} - ${artist.name}`);
+    }
+    console.log();
+
+    console.log("FOLLOWED ARTISTS");
+    for (const [index, artist] of followedArtists.entries()) {
+      console.log(`${index + 1} - ${artist.name}`);
+    }
   } catch (err) {
     console.error(err.message);
     process.exit(1);
@@ -58,49 +64,81 @@ function getEnvironmentVariables() {
 }
 
 async function getUserPlaylists(accessToken) {
-  const response = await superagent
-    .get(SPOTIFY_ENDPOINT_MY_PLAYLISTS)
-    .set("Authorization", `Bearer ${accessToken}`);
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_PLAYLISTS;
 
-  if (response.status !== 200) {
-    throw new Error("Cannot get user playlists");
-  }
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
 
-  return response.body;
+    if (response.status !== 200) {
+      throw new Error("Cannot get user playlists");
+    }
+
+    items = [...items, ...response.body.items];
+    next = response.body.next;
+  } while (next);
+
+  return items;
 }
 
 async function getUserTopTracks(accessToken) {
-  const response = await superagent
-    .get(SPOTIFY_ENDPOINT_MY_TOP_TRACKS)
-    .set("Authorization", `Bearer ${accessToken}`);
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_TOP_TRACKS;
 
-  if (response.status !== 200) {
-    throw new Error("Cannot get user top tracks");
-  }
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
 
-  return response.body;
+    if (response.status !== 200) {
+      throw new Error("Cannot get user top tracks");
+    }
+
+    items = [...items, ...response.body.items];
+    next = response.body.next;
+  } while (next);
+
+  return items;
 }
 
 async function getUserTopArtists(accessToken) {
-  const response = await superagent
-    .get(SPOTIFY_ENDPOINT_MY_TOP_ARTISTS)
-    .set("Authorization", `Bearer ${accessToken}`);
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_TOP_ARTISTS;
 
-  if (response.status !== 200) {
-    throw new Error("Cannot get user top artists");
-  }
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
 
-  return response.body;
+    if (response.status !== 200) {
+      throw new Error("Cannot get user top artists");
+    }
+
+    items = [...items, ...response.body.items];
+    next = response.body.next;
+  } while (next);
+
+  return items;
 }
 
 async function getUserFollowedArtists(accessToken) {
-  const response = await superagent
-    .get(SPOTIFY_ENDPOINT_MY_FOLLOWED_ARTISTS)
-    .set("Authorization", `Bearer ${accessToken}`);
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_FOLLOWED_ARTISTS;
 
-  if (response.status !== 200) {
-    throw new Error("Cannot get user followed artists");
-  }
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
 
-  return response.body;
+    if (response.status !== 200) {
+      throw new Error("Cannot get user followed artists");
+    }
+
+    items = [...items, ...response.body.artists.items];
+    next = response.body.artists.next;
+  } while (next);
+
+  return items;
 }
