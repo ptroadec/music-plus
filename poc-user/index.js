@@ -37,13 +37,23 @@ async function main() {
 
     console.log("TOP ARTISTS");
     for (const [index, artist] of topArtists.entries()) {
-      console.log(`${index + 1} - ${artist.name}`);
+      console.log(
+        `${index + 1} - ${artist.name} | popularity ${artist.popularity}`
+      );
+    }
+    console.log();
+
+    console.log("TOP GENRES");
+    for (const [genre, data] of computeTopGenres(topArtists)) {
+      console.log(`${genre} - ${data.percentage}%`);
     }
     console.log();
 
     console.log("FOLLOWED ARTISTS");
     for (const [index, artist] of followedArtists.entries()) {
-      console.log(`${index + 1} - ${artist.name}`);
+      console.log(
+        `${index + 1} - ${artist.name} | popularity ${artist.popularity}`
+      );
     }
   } catch (err) {
     console.error(err.message);
@@ -141,4 +151,35 @@ async function getUserFollowedArtists(accessToken) {
   } while (next);
 
   return items;
+}
+
+function computeTopGenres(artists) {
+  const genres = new Map();
+
+  for (const artist of artists) {
+    for (const genre of artist.genres) {
+      if (!genres.has(genre)) {
+        genres.set(genre, { count: 1 });
+        continue;
+      }
+
+      const g = genres.get(genre);
+      g.count += 1;
+    }
+  }
+
+  const totalNumberOfGenres = genres.size;
+
+  for (const [genre, data] of genres) {
+    const percentage = Math.floor((data.count / totalNumberOfGenres) * 100);
+
+    const g = genres.get(genre);
+    g.percentage = percentage;
+  }
+
+  const genresOrderedByFrequency = [...genres].sort(
+    ([, aData], [, bData]) => bData.count - aData.count
+  );
+
+  return genresOrderedByFrequency;
 }
