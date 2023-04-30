@@ -8,7 +8,7 @@ const fastify = require("fastify")({ logger: false });
 const SPOTIFY_ENDPOINT_TOKEN = "https://accounts.spotify.com/api/token";
 const SPOTIFY_ENDPOINT_AUTHORIZE = "https://accounts.spotify.com/authorize?";
 const SPOTIFY_USER_SCOPES =
-  "playlist-read-private playlist-read-collaborative user-top-read user-follow-read user-library-read";
+  "playlist-read-private playlist-read-collaborative user-top-read user-follow-read user-library-read user-read-recently-played";
 
 main();
 

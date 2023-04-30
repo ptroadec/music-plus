@@ -10,6 +10,8 @@ const SPOTIFY_ENDPOINT_MY_TOP_ARTISTS =
   "https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=50";
 const SPOTIFY_ENDPOINT_MY_FOLLOWED_ARTISTS =
   "https://api.spotify.com/v1/me/following?type=artist&limit=50";
+const SPOTIFY_ENDPOINT_MY_RECENTLY_PLAYED_TRACKS =
+  "https://api.spotify.com/v1/me/player/recently-played?limit=50";
 
 main();
 
@@ -24,6 +26,7 @@ async function main() {
       topTracks,
       topArtists,
       followedArtists,
+      recentlyPlayedTracks,
     ] = await Promise.all([
       getUserPlaylists(SPOTIFY_USER_ACCESS_TOKEN),
       getUserLikedTracks(SPOTIFY_USER_ACCESS_TOKEN),
@@ -31,6 +34,7 @@ async function main() {
       getUserTopTracks(SPOTIFY_USER_ACCESS_TOKEN),
       getUserTopArtists(SPOTIFY_USER_ACCESS_TOKEN),
       getUserFollowedArtists(SPOTIFY_USER_ACCESS_TOKEN),
+      getUserRecentlyPlayedTracks(SPOTIFY_USER_ACCESS_TOKEN),
     ]);
 
     console.log("PLAYLISTS");
@@ -91,6 +95,17 @@ async function main() {
         `${index + 1}. ${artist.name} | popularity ${artist.popularity}`
       );
     }
+    console.log();
+
+    console.log("RECENTLY PLAYED TRACKS");
+    for (const [index, track] of recentlyPlayedTracks.entries()) {
+      console.log(
+        `${index + 1}. ${track.track.name} - ${track.track.artists
+          .map((a) => a.name)
+          .join(", ")} | ${track.played_at}`
+      );
+    }
+    console.log();
   } catch (err) {
     console.error(err.message);
     process.exit(1);
@@ -224,6 +239,26 @@ async function getUserFollowedArtists(accessToken) {
 
     items = [...items, ...response.body.artists.items];
     next = response.body.artists.next;
+  } while (next);
+
+  return items;
+}
+
+async function getUserRecentlyPlayedTracks(accessToken) {
+  let items = [];
+  let next = SPOTIFY_ENDPOINT_MY_RECENTLY_PLAYED_TRACKS;
+
+  do {
+    const response = await superagent
+      .get(next)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    if (response.status !== 200) {
+      throw new Error("Cannot get user recently played tracks");
+    }
+
+    items = [...items, ...response.body.items];
+    next = response.body.next;
   } while (next);
 
   return items;
