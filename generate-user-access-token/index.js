@@ -88,7 +88,7 @@ function buildAuthorizationCodeDialogURL(clientID, redirectURI, scopes) {
 }
 
 async function startCallbackServer(port, clientID, clientSecret, redirectURI) {
-  fastify.get("/", async (request) => {
+  fastify.get("/", async (request, reply) => {
     const code = request?.query?.code;
     if (!code) {
       throw new Error("Cannot get code");
@@ -101,7 +101,10 @@ async function startCallbackServer(port, clientID, clientSecret, redirectURI) {
       redirectURI
     );
 
-    return { accessToken };
+    reply.send({ accessToken });
+    await reply;
+
+    await fastify.close();
   });
 
   await fastify.listen({ port });
