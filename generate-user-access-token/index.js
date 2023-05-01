@@ -18,7 +18,6 @@ async function main() {
       SPOTIFY_CLIENT_ID,
       SPOTIFY_CLIENT_SECRET,
       SPOTIFY_REDIRECT_URI,
-      SERVER_PORT,
     } = await getEnvironmentVariables();
 
     await openSpotifyAuthorizationCodeDialog(
@@ -27,7 +26,6 @@ async function main() {
     );
 
     await startCallbackServer(
-      SERVER_PORT,
       SPOTIFY_CLIENT_ID,
       SPOTIFY_CLIENT_SECRET,
       SPOTIFY_REDIRECT_URI
@@ -54,15 +52,19 @@ async function getEnvironmentVariables() {
     throw new Error("Missing SPOTIFY_REDIRECT_URI");
   }
 
-  if (!process.env.SERVER_PORT) {
-    throw new Error("Missing SERVER_PORT");
+  try {
+    const { pathname, port } = getPathnameAndPort(process.env.SPOTIFY_REDIRECT_URI);
+    if (!pathname || !port) {
+      throw new Error();
+    }
+  } catch {
+    throw new Error('Invalid SPOTIFY_REDIRECT_URI');
   }
 
   return {
     SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
     SPOTIFY_REDIRECT_URI: process.env.SPOTIFY_REDIRECT_URI,
-    SERVER_PORT: process.env.SERVER_PORT,
   };
 }
 
@@ -88,8 +90,10 @@ function buildAuthorizationCodeDialogURL(clientID, redirectURI, scopes) {
   return url;
 }
 
-async function startCallbackServer(port, clientID, clientSecret, redirectURI) {
-  fastify.get("/", async (request, reply) => {
+async function startCallbackServer(clientID, clientSecret, redirectURI) {
+  const { pathname, port } = getPathnameAndPort(redirectURI);
+
+  fastify.get(pathname, async (request, reply) => {
     const code = request?.query?.code;
     if (!code) {
       throw new Error("Cannot get code");
@@ -111,6 +115,11 @@ async function startCallbackServer(port, clientID, clientSecret, redirectURI) {
   });
 
   await fastify.listen({ port });
+}
+
+function getPathnameAndPort(redirectURI) {
+  const { pathname, port } = new URL(redirectURI);
+  return { pathname, port };
 }
 
 async function getAccessToken(clientID, clientSecret, code, redirectURI) {
