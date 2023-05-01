@@ -17,7 +17,7 @@ main();
 
 async function main() {
   try {
-    const { SPOTIFY_USER_ACCESS_TOKEN } = getEnvironmentVariables();
+    const { SPOTIFY_USER_ACCESS_TOKEN } = await getEnvironmentVariables();
 
     const [
       playlists,
@@ -112,8 +112,9 @@ async function main() {
   }
 }
 
-function getEnvironmentVariables() {
-  require("dotenv").config();
+async function getEnvironmentVariables() {
+  const { default: dotenv } = await import("dotenv");
+  dotenv.config();
 
   if (!process.env.SPOTIFY_USER_ACCESS_TOKEN) {
     throw new Error("Missing SPOTIFY_USER_ACCESS_TOKEN");
@@ -265,30 +266,29 @@ async function getUserRecentlyPlayedTracks(accessToken) {
 }
 
 function computeTopGenres(artists) {
-  const genres = new Map();
+  const genresCounter = new Map();
 
   for (const artist of artists) {
     for (const genre of artist.genres) {
-      if (!genres.has(genre)) {
-        genres.set(genre, { count: 1 });
-        continue;
+      if (!genresCounter.has(genre)) {
+        genresCounter.set(genre, { count: 0 });
       }
 
-      const g = genres.get(genre);
+      const g = genresCounter.get(genre);
       g.count += 1;
     }
   }
 
-  const totalNumberOfGenres = genres.size;
+  const totalNumberOfGenres = genresCounter.size;
 
-  for (const [genre, data] of genres) {
+  for (const [genre, data] of genresCounter) {
     const percentage = Math.floor((data.count / totalNumberOfGenres) * 100);
 
-    const g = genres.get(genre);
+    const g = genresCounter.get(genre);
     g.percentage = percentage;
   }
 
-  const genresOrderedByFrequency = [...genres].sort(
+  const genresOrderedByFrequency = [...genresCounter].sort(
     ([, aData], [, bData]) => bData.count - aData.count
   );
 
