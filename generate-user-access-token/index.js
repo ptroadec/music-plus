@@ -19,7 +19,7 @@ async function main() {
       SPOTIFY_CLIENT_SECRET,
       SPOTIFY_REDIRECT_URI,
       SERVER_PORT,
-    } = getEnvironmentVariables();
+    } = await getEnvironmentVariables();
 
     await openSpotifyAuthorizationCodeDialog(
       SPOTIFY_CLIENT_ID,
@@ -38,8 +38,9 @@ async function main() {
   }
 }
 
-function getEnvironmentVariables() {
-  require("dotenv").config();
+async function getEnvironmentVariables() {
+  const { default: dotenv} = await import("dotenv");
+  dotenv.config();
 
   if (!process.env.SPOTIFY_CLIENT_ID) {
     throw new Error("Missing SPOTIFY_CLIENT_ID");
@@ -94,14 +95,16 @@ async function startCallbackServer(port, clientID, clientSecret, redirectURI) {
       throw new Error("Cannot get code");
     }
 
-    const accessToken = await getAccessToken(
+    const responseBody = await getAccessToken(
       clientID,
       clientSecret,
       code,
       redirectURI
     );
 
-    reply.send({ accessToken });
+    
+    console.log(responseBody);
+    reply.send(responseBody);
     await reply;
 
     await fastify.close();
@@ -115,15 +118,19 @@ async function getAccessToken(clientID, clientSecret, code, redirectURI) {
 
   const response = await superagent
     .post(SPOTIFY_ENDPOINT_TOKEN)
-    .send("grant_type=authorization_code")
-    .send(`code=${code}`)
-    .send(`redirect_uri=${redirectURI}`)
-    .set("Authorization", `Basic ${basic}`)
-    .set("Content-Type", "application/x-www-form-urlencoded");
-
+    .send({
+      "grant_type": "authorization_code",
+      "code": code,
+      "redirect_uri": redirectURI,
+    })
+    .set({
+      "Authorization": `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    });
+    
   if (response.status !== 200) {
     throw new Error("Cannot get accessToken");
   }
 
-  return response.body.access_token;
+  return response.body;
 }
